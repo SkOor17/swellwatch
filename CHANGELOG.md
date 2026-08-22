@@ -8,3 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Initialized documentation, agent rules, and repository structure.
+- Initialized Go backend with Chi router, pgx, go-redis, Dockerfile, and golangci-lint configuration.
+- Initialized React/Vite/TypeScript frontend with Tailwind CSS, Shadcn UI setup, Zustand, TanStack Query, Dockerfile, and Prettier configuration.
+- Added Docker Compose configuration for PostgreSQL, Redis, backend, and frontend services.
+- Added Makefile with commands for Docker, testing, linting, formatting, and pre-commit checks.
+- Added unit tests for backend API routes and frontend React components (Vitest + Testing Library).
+- Added pre-commit configuration and GitHub Actions CI workflow for pull requests.
