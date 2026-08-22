@@ -1,4 +1,4 @@
-FROM golang:1.22-alpine AS builder
+FROM golang:1.23-alpine AS builder
 
 WORKDIR /app
 
@@ -10,7 +10,7 @@ RUN go mod download
 COPY . .
 
 # Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -o /api main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -o /api ./cmd/api/main.go
 
 FROM alpine:latest
 WORKDIR /app

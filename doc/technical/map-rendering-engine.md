@@ -1,6 +1,7 @@
 # SwellWatch Map Rendering Engine Specs
 
 ## 1. Objectives & Performance Constraints
+
 The map engine provides an ultra-fluid interactive visualization of the French coastline and ocean dynamics without heavy map tile services (no Mapbox, Google Maps, or Leaflet OSM).
 
 - **60 FPS minimum** on mobile and desktop via `requestAnimationFrame`.
@@ -9,10 +10,12 @@ The map engine provides an ultra-fluid interactive visualization of the French c
 - Adaptive vector rendering supporting Retina `devicePixelRatio`.
 
 ## 2. Geometry and Projection
+
 A local Mercator or equirectangular projection is used for metropolitan France:
+
 ```javascript
-x = (lng - lng_min) * (width / (lng_max - lng_min))
-y = (lat_max - lat) * (height / (lat_max - lat_min))
+x = (lng - lng_min) * (width / (lng_max - lng_min));
+y = (lat_max - lat) * (height / (lat_max - lat_min));
 ```
 
 - Coastal outlines are stored in simplified TopoJSON/GeoJSON format.
@@ -20,6 +23,7 @@ y = (lat_max - lat) * (height / (lat_max - lat_min))
 - Visuals: Dark seabed background (`#0B132B`), sleek landmass (`#1C2541`), with a soft cyan/white coastal outline.
 
 ## 3. Swell Train Kinematics and Animation
+
 Waves are modeled as wavefronts propagating towards the coast according to the average swell vector ($\theta, H_s, T_p$).
 
 - **Direction ($\theta$)**: Swell incidence angle.
@@ -30,9 +34,11 @@ Waves are modeled as wavefronts propagating towards the coast according to the a
 - **Phase ($\phi$)**: $\phi(t) = (t \times c) \pmod \lambda$
 
 ### Coastal Fade-out
+
 As wavefronts approach the shore ($d < d_{threshold}$), opacity undergoes a cosine attenuation to simulate breaking, preventing the lines from crossing onto the landmass.
 
 ## 4. Spot Interaction
+
 - Surfing spots are mapped onto the Canvas.
 - Displayed as pulsing points colored by condition score:
   - **Green** (Score $\ge 7.5$): Excellent conditions.

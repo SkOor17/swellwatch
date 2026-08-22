@@ -1,10 +1,10 @@
-.PHONY: docker-start docker-stop docker-build test-backend test-frontend test-all lint-backend lint-frontend lint-all format pre-commit setup
+.PHONY: start stop docker-build test-backend test-frontend test-all lint-backend lint-frontend lint-all format format-markdown format-frontend format-backend pre-commit precommit setup
 
 # --- Docker ---
-docker-start:
+start:
 	docker compose up -d
 
-docker-stop:
+stop:
 	docker compose down
 
 docker-build:
@@ -38,9 +38,19 @@ lint-frontend:
 lint-all: lint-backend lint-frontend
 
 # --- Formatting ---
-format:
+format-frontend:
 	cd frontend && npx prettier --write .
+
+format-backend:
 	cd backend && go fmt ./...
+
+format-markdown:
+	npx --prefix frontend prettier --write "**/*.md"
+
+format: format-frontend format-backend format-markdown
 
 # --- Pre-commit ---
 pre-commit: format lint-all build-all test-all
+precommit: pre-commit
+
+

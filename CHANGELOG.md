@@ -6,7 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
 ### Added
+
+- feat(api): Add static spots endpoint for MVP (US1).
+- feat(ui): Display static spots list using React Query for MVP (US1).
 - Initialized documentation, agent rules, and repository structure.
 - Initialized Go backend with Chi router, pgx, go-redis, Dockerfile, and golangci-lint configuration.
 - Initialized React/Vite/TypeScript frontend with Tailwind CSS, Shadcn UI setup, Zustand, TanStack Query, Dockerfile, and Prettier configuration.
