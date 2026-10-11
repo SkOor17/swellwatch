@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- feat(scoring): Implement basic mode surf score calculation (0 to 10) based on swell energy and wind penalty (US3).
+- feat(scoring): Implement dynamic skill level matrix evaluating conditions and seabed type (US3).
+- feat(ui): Display condition score badge and recommended skill level badge on spot cards and hourly forecasts (US3).
 - chore(backend): Add Air live-reload watcher configuration and dev Docker stage for automatic rebuilds on code changes.
 - feat(api): Integrate Open-Meteo Marine & Forecast API with in-memory caching and stale fallback resilience (US2).
 - feat(api): Add spot forecast detail endpoint (`GET /api/v1/spots/{id}/forecast`) and enrich spot catalog (`GET /api/v1/spots`) with current conditions (US2).

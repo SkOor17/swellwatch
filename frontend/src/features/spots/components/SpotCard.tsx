@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import type { Spot } from '../types';
+import { getLevelInfo, getScoreBadgeClass } from '../utils/scoring';
 import { formatShortTime } from '../utils/time';
 import { DirectionIndicator } from './DirectionIndicator';
 
@@ -21,6 +22,7 @@ interface SpotCardProps {
 
 export function SpotCard({ spot, onSelect, isSelected }: SpotCardProps) {
   const forecast = spot.current_forecast;
+  const levelInfo = forecast ? getLevelInfo(forecast.level) : null;
 
   return (
     <Card
@@ -46,50 +48,81 @@ export function SpotCard({ spot, onSelect, isSelected }: SpotCardProps) {
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {forecast ? (
-          <div className="grid grid-cols-2 gap-3 pt-1">
-            {/* Marine / Swell Block */}
-            <div className="rounded-lg bg-blue-50/50 p-3 border border-blue-100">
-              <div className="flex items-center gap-1.5 text-blue-900 font-semibold text-xs mb-1.5">
-                <Waves className="h-4 w-4 text-blue-600" />
-                <span>Houle</span>
-              </div>
-              <div className="flex items-baseline gap-1">
-                <span className="text-xl font-bold text-slate-900">
-                  {forecast.wave_height}m
+        {forecast && levelInfo ? (
+          <>
+            <div className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 p-2.5 border border-slate-100">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-medium text-slate-500">
+                  Qualité :
                 </span>
-                <span className="text-xs text-slate-500 font-medium">
-                  {forecast.wave_period}s
-                </span>
+                {forecast.score !== undefined ? (
+                  <span
+                    className={`inline-flex items-center justify-center font-bold text-xs px-2 py-0.5 rounded-md border ${getScoreBadgeClass(
+                      forecast.score
+                    )}`}
+                  >
+                    {forecast.score}/10
+                  </span>
+                ) : (
+                  <span className="text-xs text-slate-400">N/A</span>
+                )}
               </div>
-              <div className="mt-2">
-                <DirectionIndicator
-                  degrees={
-                    forecast.swell_wave_direction || forecast.wave_direction
-                  }
-                />
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-medium text-slate-500">
+                  Niveau :
+                </span>
+                <span
+                  className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold border ${levelInfo.badgeClass}`}
+                >
+                  {levelInfo.label}
+                </span>
               </div>
             </div>
 
-            {/* Wind Block */}
-            <div className="rounded-lg bg-slate-50 p-3 border border-slate-100">
-              <div className="flex items-center gap-1.5 text-slate-900 font-semibold text-xs mb-1.5">
-                <Wind className="h-4 w-4 text-slate-600" />
-                <span>Vent</span>
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              {/* Marine / Swell Block */}
+              <div className="rounded-lg bg-blue-50/50 p-3 border border-blue-100">
+                <div className="flex items-center gap-1.5 text-blue-900 font-semibold text-xs mb-1.5">
+                  <Waves className="h-4 w-4 text-blue-600" />
+                  <span>Houle</span>
+                </div>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-xl font-bold text-slate-900">
+                    {forecast.wave_height}m
+                  </span>
+                  <span className="text-xs text-slate-500 font-medium">
+                    {forecast.wave_period}s
+                  </span>
+                </div>
+                <div className="mt-2">
+                  <DirectionIndicator
+                    degrees={
+                      forecast.swell_wave_direction || forecast.wave_direction
+                    }
+                  />
+                </div>
               </div>
-              <div className="flex items-baseline gap-1">
-                <span className="text-xl font-bold text-slate-900">
-                  {forecast.wind_speed} kn
-                </span>
-                <span className="text-xs text-amber-600 font-medium">
-                  (raf. {forecast.wind_gusts} kn)
-                </span>
-              </div>
-              <div className="mt-2">
-                <DirectionIndicator degrees={forecast.wind_direction} />
+
+              {/* Wind Block */}
+              <div className="rounded-lg bg-slate-50 p-3 border border-slate-100">
+                <div className="flex items-center gap-1.5 text-slate-900 font-semibold text-xs mb-1.5">
+                  <Wind className="h-4 w-4 text-slate-600" />
+                  <span>Vent</span>
+                </div>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-xl font-bold text-slate-900">
+                    {forecast.wind_speed} kn
+                  </span>
+                  <span className="text-xs text-amber-600 font-medium">
+                    (raf. {forecast.wind_gusts} kn)
+                  </span>
+                </div>
+                <div className="mt-2">
+                  <DirectionIndicator degrees={forecast.wind_direction} />
+                </div>
               </div>
             </div>
-          </div>
+          </>
         ) : (
           <div className="py-4 text-center text-sm text-slate-400">
             Données météo momentanément indisponibles.

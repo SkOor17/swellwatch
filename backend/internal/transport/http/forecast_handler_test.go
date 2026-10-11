@@ -92,7 +92,10 @@ func TestGetSpotForecastHandler(t *testing.T) {
 		assert.Equal(t, "hossegor", forecast.SpotID)
 		assert.Equal(t, 1.8, forecast.Current.WaveHeight)
 		assert.Equal(t, 14.0, forecast.Current.WindSpeed)
+		assert.Greater(t, forecast.Current.Score, 0.0)
+		assert.NotEmpty(t, forecast.Current.Level)
 		assert.Len(t, forecast.Hourly, 1)
+		assert.NotEmpty(t, forecast.Hourly[0].Level)
 	})
 
 	t.Run("returns_502_when_service_errors", func(t *testing.T) {
@@ -122,6 +125,7 @@ func TestGetSpotsHandler_WithForecasts(t *testing.T) {
 				SpotID: spotID,
 				Current: domain.CurrentConditions{
 					WaveHeight: 2.0,
+					WavePeriod: 11.0,
 					WindSpeed:  10.0,
 				},
 			}, nil
@@ -141,4 +145,6 @@ func TestGetSpotsHandler_WithForecasts(t *testing.T) {
 	assert.Len(t, res["spots"], 3)
 	assert.NotNil(t, res["spots"][0].CurrentForecast)
 	assert.Equal(t, 2.0, res["spots"][0].CurrentForecast.WaveHeight)
+	assert.Greater(t, res["spots"][0].CurrentForecast.Score, 0.0)
+	assert.NotEmpty(t, res["spots"][0].CurrentForecast.Level)
 }

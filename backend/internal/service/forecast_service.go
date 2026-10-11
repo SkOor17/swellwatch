@@ -9,6 +9,7 @@ import (
 	"github.com/swellwatch/backend/internal/cache"
 	"github.com/swellwatch/backend/internal/domain"
 	"github.com/swellwatch/backend/internal/openmeteo"
+	"github.com/swellwatch/backend/internal/scoring"
 )
 
 type ForecastService struct {
@@ -27,6 +28,9 @@ func NewForecastService(client openmeteo.Client, cache *cache.MemoryCache[domain
 
 func (s *ForecastService) GetSpotForecast(ctx context.Context, spot domain.Spot) (*domain.SpotForecast, error) {
 	if cached, found := s.cache.Get(spot.ID); found {
+		if cached.Current.Level == "" {
+			s.enrichForecastWithScoring(spot, &cached)
+		}
 		return &cached, nil
 	}
 
@@ -34,13 +38,48 @@ func (s *ForecastService) GetSpotForecast(ctx context.Context, spot domain.Spot)
 	if err != nil {
 		if stale, found := s.cache.GetStale(spot.ID); found {
 			log.Printf("Warning: failed to fetch fresh forecast for %s (%v), returning stale cache", spot.ID, err)
+			if stale.Current.Level == "" {
+				s.enrichForecastWithScoring(spot, &stale)
+			}
 			return &stale, nil
 		}
 		return nil, err
 	}
 
+	s.enrichForecastWithScoring(spot, forecast)
 	s.cache.Set(spot.ID, *forecast, s.ttl)
 	return forecast, nil
+}
+
+func (s *ForecastService) enrichForecastWithScoring(spot domain.Spot, forecast *domain.SpotForecast) {
+	if forecast == nil {
+		return
+	}
+
+	seabed := spot.SeabedType
+	if seabed == "" {
+		seabed = domain.SeabedSand
+	}
+
+	currentScore, currentLevel := scoring.EvaluateConditions(
+		forecast.Current.WaveHeight,
+		forecast.Current.WavePeriod,
+		forecast.Current.WindSpeed,
+		seabed,
+	)
+	forecast.Current.Score = currentScore
+	forecast.Current.Level = currentLevel
+
+	for i := range forecast.Hourly {
+		hScore, hLevel := scoring.EvaluateConditions(
+			forecast.Hourly[i].WaveHeight,
+			forecast.Hourly[i].WavePeriod,
+			forecast.Hourly[i].WindSpeed,
+			seabed,
+		)
+		forecast.Hourly[i].Score = hScore
+		forecast.Hourly[i].Level = hLevel
+	}
 }
 
 func (s *ForecastService) EnrichSpotsWithForecasts(ctx context.Context, spots []domain.Spot) []domain.Spot {

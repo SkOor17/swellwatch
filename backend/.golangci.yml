@@ -1,33 +1,6 @@
-# yaml-language-server: $schema=https://golangci-lint.run/jsonschema/golangci.v1.jsonschema.json
-linters-settings:
-  govet:
-    enable:
-      - shadow
-  errcheck:
-    check-type-assertions: true
-    check-blank: true
-  gocyclo:
-    min-complexity: 15
-  dupl:
-    threshold: 100
-  goconst:
-    min-len: 2
-    min-occurrences: 2
-  depguard:
-    rules:
-      main:
-        files:
-          - $all
-        allow:
-          - $gostd
-          - github.com/swellwatch/backend
-          - github.com/go-chi/chi
-          - github.com/stretchr/testify
-          - github.com/redis/go-redis
-          - github.com/jackc/pgx
-  misspell:
-    locale: US
-
+version: "2"
+run:
+  tests: true
 linters:
   enable:
     - asciicheck
@@ -36,26 +9,63 @@ linters:
     - depguard
     - dogsled
     - dupl
-    - errcheck
     - goconst
     - gocritic
     - gocyclo
-    - gofmt
     - gosec
-    - gosimple
-    - govet
-    - ineffassign
     - misspell
     - nakedret
     - nolintlint
     - prealloc
     - staticcheck
-    - stylecheck
-    - typecheck
     - unconvert
     - unparam
-    - unused
-
-run:
-  timeout: 5m
-  tests: true
+  settings:
+    depguard:
+      rules:
+        main:
+          files:
+            - $all
+          allow:
+            - $gostd
+            - github.com/swellwatch/backend
+            - github.com/go-chi/chi
+            - github.com/stretchr/testify
+            - github.com/redis/go-redis
+            - github.com/jackc/pgx
+    dupl:
+      threshold: 100
+    errcheck:
+      check-type-assertions: true
+      check-blank: true
+    goconst:
+      min-len: 2
+      min-occurrences: 2
+      ignore-tests: true
+    gocyclo:
+      min-complexity: 15
+    govet:
+      enable:
+        - shadow
+    misspell:
+      locale: US
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gofmt
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
