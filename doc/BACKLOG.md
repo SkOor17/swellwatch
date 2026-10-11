@@ -50,7 +50,7 @@ User Stories status is tracked via checkboxes:
 - Use the Open-Meteo Marine API and Forecast API.
 - Implement a minimal cache (in-memory for now) in Go.
 
-### `[ ]` US3: Score Calculation and Recommended Level
+### `[x]` US3: Score Calculation and Recommended Level
 
 - **As a** surfer,
 - **I want** to see a score out of 10 and a recommended level (Beginner, Intermediate, etc.) for each spot,

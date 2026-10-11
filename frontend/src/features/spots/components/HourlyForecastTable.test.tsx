@@ -16,6 +16,8 @@ describe('HourlyForecastTable', () => {
       wind_speed: 12,
       wind_gusts: 18,
       wind_direction: 290,
+      score: 7.2,
+      level: 'intermediate',
     },
     {
       time: '2026-08-22T09:00:00Z',
@@ -28,21 +30,27 @@ describe('HourlyForecastTable', () => {
       wind_speed: 14,
       wind_gusts: 20,
       wind_direction: 295,
+      score: 8.0,
+      level: 'advanced',
     },
   ];
 
-  it('renders hourly forecast rows correctly', () => {
+  it('renders hourly forecast rows correctly with score and level', () => {
     render(<HourlyForecastTable hourly={sampleHourly} />);
 
     expect(screen.getByText('1.5m')).toBeInTheDocument();
     expect(screen.getByText('10s')).toBeInTheDocument();
     expect(screen.getByText('12 kn')).toBeInTheDocument();
     expect(screen.getByText('18 kn')).toBeInTheDocument();
+    expect(screen.getByText('7.2/10')).toBeInTheDocument();
+    expect(screen.getByText('Intermédiaire')).toBeInTheDocument();
 
     expect(screen.getByText('1.7m')).toBeInTheDocument();
     expect(screen.getByText('11s')).toBeInTheDocument();
     expect(screen.getByText('14 kn')).toBeInTheDocument();
     expect(screen.getByText('20 kn')).toBeInTheDocument();
+    expect(screen.getByText('8/10')).toBeInTheDocument();
+    expect(screen.getByText('Avancé')).toBeInTheDocument();
   });
 
   it('renders empty message when hourly data is empty', () => {

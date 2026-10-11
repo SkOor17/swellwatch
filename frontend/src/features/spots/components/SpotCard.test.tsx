@@ -19,6 +19,8 @@ describe('SpotCard', () => {
       wind_speed: 14,
       wind_gusts: 20,
       wind_direction: 290,
+      score: 8.2,
+      level: 'intermediate',
       last_updated_at: '2026-08-22T15:00:00Z',
     },
   };
@@ -47,6 +49,28 @@ describe('SpotCard', () => {
     expect(screen.getByText(/20 kn/)).toBeInTheDocument();
     expect(screen.getByText('285° WNW')).toBeInTheDocument();
     expect(screen.getByText('290° WNW')).toBeInTheDocument();
+  });
+
+  it('renders score badge and recommended skill level badge', () => {
+    render(<SpotCard spot={spotWithForecast} />);
+
+    expect(screen.getByText('8.2/10')).toBeInTheDocument();
+    expect(screen.getByText('Intermédiaire')).toBeInTheDocument();
+  });
+
+  it('renders non praticable badge for flat surf conditions', () => {
+    const flatSpot: Spot = {
+      ...spotWithForecast,
+      current_forecast: {
+        ...spotWithForecast.current_forecast!,
+        score: 1.0,
+        level: 'flat',
+      },
+    };
+    render(<SpotCard spot={flatSpot} />);
+
+    expect(screen.getByText('1/10')).toBeInTheDocument();
+    expect(screen.getByText('Non praticable')).toBeInTheDocument();
   });
 
   it('renders fallback state when forecast is not available', () => {

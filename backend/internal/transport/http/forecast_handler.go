@@ -3,6 +3,7 @@ package http
 import (
 	"log"
 	"net/http"
+	"strings"
 
 	chi "github.com/go-chi/chi/v5"
 	"github.com/swellwatch/backend/internal/service"
@@ -24,7 +25,8 @@ func GetSpotForecastHandler(spotSvc *service.SpotService, forecastSvc *service.F
 
 		forecast, err := forecastSvc.GetSpotForecast(r.Context(), *spot)
 		if err != nil {
-			log.Printf("Error fetching forecast for spot %s: %v", spotID, err)
+			cleanID := strings.ReplaceAll(strings.ReplaceAll(spot.ID, "\n", ""), "\r", "")
+			log.Printf("Error fetching forecast for spot %s: %v", cleanID, err)
 			writeJSONError(w, http.StatusBadGateway, "failed to fetch forecast")
 			return
 		}

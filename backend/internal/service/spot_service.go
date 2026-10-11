@@ -13,9 +13,9 @@ type SpotService struct {
 func NewSpotService() *SpotService {
 	return &SpotService{
 		spots: []domain.Spot{
-			{ID: "hossegor", Name: "Hossegor", Latitude: 43.668, Longitude: -1.439},
-			{ID: "biarritz", Name: "Biarritz", Latitude: 43.483, Longitude: -1.558},
-			{ID: "lacanau", Name: "Lacanau-Océan", Latitude: 45.001, Longitude: -1.2},
+			{ID: "hossegor", Name: "Hossegor", Latitude: 43.668, Longitude: -1.439, SeabedType: domain.SeabedSand},
+			{ID: "biarritz", Name: "Biarritz", Latitude: 43.483, Longitude: -1.558, SeabedType: domain.SeabedSand},
+			{ID: "lacanau", Name: "Lacanau-Océan", Latitude: 45.001, Longitude: -1.2, SeabedType: domain.SeabedSand},
 		},
 	}
 }

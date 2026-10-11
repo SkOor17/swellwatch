@@ -1,3 +1,13 @@
+export type SeabedType = 'sand' | 'reef' | 'rock' | 'point' | 'slab';
+
+export type SurfSkillLevel =
+  'flat' | 'beginner' | 'intermediate' | 'advanced' | 'expert';
+
+export interface LevelInfo {
+  label: string;
+  badgeClass: string;
+}
+
 export interface CurrentConditions {
   wave_height: number;
   wave_period: number;
@@ -8,6 +18,8 @@ export interface CurrentConditions {
   wind_speed: number;
   wind_gusts: number;
   wind_direction: number;
+  score?: number;
+  level?: SurfSkillLevel;
   last_updated_at: string;
 }
 
@@ -22,6 +34,8 @@ export interface HourlyForecast {
   wind_speed: number;
   wind_gusts: number;
   wind_direction: number;
+  score?: number;
+  level?: SurfSkillLevel;
 }
 
 export interface SpotForecast {
@@ -36,5 +50,6 @@ export interface Spot {
   name: string;
   latitude: number;
   longitude: number;
+  seabed_type?: SeabedType;
   current_forecast?: CurrentConditions | null;
 }

@@ -194,10 +194,60 @@ func TestForecastService_EnrichSpotsWithForecasts(t *testing.T) {
 	assert.Equal(t, "hossegor", enriched[0].ID)
 	require.NotNil(t, enriched[0].CurrentForecast)
 	assert.Equal(t, 2.0, enriched[0].CurrentForecast.WaveHeight)
+	assert.NotEmpty(t, enriched[0].CurrentForecast.Level)
 
 	assert.Equal(t, "biarritz", enriched[1].ID)
 	require.NotNil(t, enriched[1].CurrentForecast)
 	assert.Equal(t, 1.3, enriched[1].CurrentForecast.WaveHeight)
+	assert.NotEmpty(t, enriched[1].CurrentForecast.Level)
 
 	assert.Equal(t, 2, mockClient.CallsCount())
+}
+
+func TestForecastService_GetSpotForecast_CalculatesScoreAndLevel(t *testing.T) {
+	memCache := cache.NewMemoryCache[domain.SpotForecast]()
+	mockClient := &MockOpenMeteoClient{
+		fetchFunc: func(ctx context.Context, spotID string, lat, lon float64) (*domain.SpotForecast, error) {
+			return &domain.SpotForecast{
+				SpotID: "hossegor",
+				Current: domain.CurrentConditions{
+					WaveHeight: 1.5,
+					WavePeriod: 12.0,
+					WindSpeed:  5.0,
+				},
+				Hourly: []domain.HourlyForecast{
+					{
+						Time:       time.Date(2026, 8, 22, 14, 0, 0, 0, time.UTC),
+						WaveHeight: 0.2,
+						WavePeriod: 6.0,
+						WindSpeed:  4.0,
+					},
+				},
+			}, nil
+		},
+	}
+
+	spot := domain.Spot{
+		ID:         "hossegor",
+		Name:       "Hossegor",
+		Latitude:   43.668,
+		Longitude:  -1.439,
+		SeabedType: domain.SeabedSand,
+	}
+
+	svc := NewForecastService(mockClient, memCache, 1*time.Hour)
+	ctx := context.Background()
+
+	forecast, err := svc.GetSpotForecast(ctx, spot)
+	require.NoError(t, err)
+	require.NotNil(t, forecast)
+
+	// Check Current conditions score & level
+	assert.Greater(t, forecast.Current.Score, 7.0)
+	assert.Equal(t, domain.SkillLevelIntermediate, forecast.Current.Level)
+
+	// Check Hourly conditions score & level
+	require.Len(t, forecast.Hourly, 1)
+	assert.Less(t, forecast.Hourly[0].Score, 2.0)
+	assert.Equal(t, domain.SkillLevelFlat, forecast.Hourly[0].Level)
 }
