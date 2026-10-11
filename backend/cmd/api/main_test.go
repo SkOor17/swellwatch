@@ -1,13 +1,51 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"github.com/swellwatch/backend/internal/cache"
+	"github.com/swellwatch/backend/internal/domain"
+	"github.com/swellwatch/backend/internal/service"
 	apihttp "github.com/swellwatch/backend/internal/transport/http"
 )
+
+type mockOpenMeteoClient struct{}
+
+func (m *mockOpenMeteoClient) FetchSpotForecast(ctx context.Context, spotID string, lat, lon float64) (*domain.SpotForecast, error) {
+	return &domain.SpotForecast{
+		SpotID: spotID,
+		Current: domain.CurrentConditions{
+			WaveHeight: 1.8,
+			WindSpeed:  12.0,
+		},
+		Hourly: []domain.HourlyForecast{
+			{
+				WaveHeight: 1.8,
+				WindSpeed:  12.0,
+			},
+		},
+	}, nil
+}
+
+func setupTestRouter() http.Handler {
+	spotSvc := service.NewSpotService()
+	memCache := cache.NewMemoryCache[domain.SpotForecast]()
+	forecastSvc := service.NewForecastService(&mockOpenMeteoClient{}, memCache, time.Hour)
+	return apihttp.SetupRouterWithServices(spotSvc, forecastSvc)
+}
+
+func executeRequest(handler http.Handler, method, target string) *httptest.ResponseRecorder {
+	req := httptest.NewRequest(method, target, nil)
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+	return rr
+}
 
 func TestHealthCheck(t *testing.T) {
 	router := apihttp.SetupRouter()
@@ -22,24 +60,20 @@ func TestHealthCheck(t *testing.T) {
 	assert.Equal(t, "SwellWatch API is running", rr.Body.String())
 }
 
-func TestGetSpots(t *testing.T) {
-	router := apihttp.SetupRouter()
+func TestGetSpots_WithForecast(t *testing.T) {
+	router := setupTestRouter()
+	rr := executeRequest(router, http.MethodGet, "/api/v1/spots")
 
-	req, err := http.NewRequest(http.MethodGet, "/api/v1/spots", nil)
-	assert.NoError(t, err)
-
-	rr := httptest.NewRecorder()
-	router.ServeHTTP(rr, req)
-
-	assert.Equal(t, http.StatusOK, rr.Code)
+	require.Equal(t, http.StatusOK, rr.Code)
 	assert.Equal(t, "application/json", rr.Header().Get("Content-Type"))
+	assert.Contains(t, rr.Body.String(), `"wave_height":1.8`)
+}
 
-	expectedJSON := `{
-		"spots": [
-			{"id": "hossegor", "name": "Hossegor", "latitude": 43.668, "longitude": -1.439},
-			{"id": "biarritz", "name": "Biarritz", "latitude": 43.483, "longitude": -1.558},
-			{"id": "lacanau", "name": "Lacanau-Océan", "latitude": 45.001, "longitude": -1.2}
-		]
-	}`
-	assert.JSONEq(t, expectedJSON, rr.Body.String())
+func TestGetSpotForecast_Endpoint(t *testing.T) {
+	router := setupTestRouter()
+	rr := executeRequest(router, http.MethodGet, "/api/v1/spots/hossegor/forecast")
+
+	require.Equal(t, http.StatusOK, rr.Code)
+	assert.Equal(t, "application/json", rr.Header().Get("Content-Type"))
+	assert.Contains(t, rr.Body.String(), `"spot_id":"hossegor"`)
 }

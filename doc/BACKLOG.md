@@ -32,7 +32,7 @@ User Stories status is tracked via checkboxes:
 - Hardcode 3 to 5 spots in the backend (e.g., Hossegor, Biarritz, Lacanau).
 - Create a simple React component (`SpotList`).
 
-### `[ ]` US2: Fetching and Displaying Raw Forecasts
+### `[x]` US2: Fetching and Displaying Raw Forecasts
 
 - **As a** surfer,
 - **I want** to see the wave height, period, and wind speed/direction for a spot,
