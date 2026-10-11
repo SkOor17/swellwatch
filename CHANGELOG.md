@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- chore(backend): Add Air live-reload watcher configuration and dev Docker stage for automatic rebuilds on code changes.
+- feat(api): Integrate Open-Meteo Marine & Forecast API with in-memory caching and stale fallback resilience (US2).
+- feat(api): Add spot forecast detail endpoint (`GET /api/v1/spots/{id}/forecast`) and enrich spot catalog (`GET /api/v1/spots`) with current conditions (US2).
+- feat(ui): Display live forecast cards with wave height, period, wind speed/gusts in knots, and directional indicators with cardinal bearing (US2).
+- feat(ui): Add daily hourly forecast breakdown modal and Shadcn UI components (US2).
 - feat(api): Add static spots endpoint for MVP (US1).
 - feat(ui): Display static spots list using React Query for MVP (US1).
 - Initialized documentation, agent rules, and repository structure.

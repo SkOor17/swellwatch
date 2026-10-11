@@ -3,12 +3,26 @@ package http
 import (
 	"log"
 	"net/http"
+	"time"
 
 	chi "github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/swellwatch/backend/internal/cache"
+	"github.com/swellwatch/backend/internal/domain"
+	"github.com/swellwatch/backend/internal/openmeteo"
+	"github.com/swellwatch/backend/internal/service"
 )
 
 func SetupRouter() http.Handler {
+	spotSvc := service.NewSpotService()
+	openMeteoClient := openmeteo.NewClient()
+	memCache := cache.NewMemoryCache[domain.SpotForecast]()
+	forecastSvc := service.NewForecastService(openMeteoClient, memCache, 1*time.Hour)
+
+	return SetupRouterWithServices(spotSvc, forecastSvc)
+}
+
+func SetupRouterWithServices(spotSvc *service.SpotService, forecastSvc *service.ForecastService) http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
@@ -19,7 +33,10 @@ func SetupRouter() http.Handler {
 		}
 	})
 
-	r.Get("/api/v1/spots", GetSpotsHandler)
+	r.Route("/api/v1/spots", func(r chi.Router) {
+		r.Get("/", GetSpotsHandler(spotSvc, forecastSvc))
+		r.Get("/{id}/forecast", GetSpotForecastHandler(spotSvc, forecastSvc))
+	})
 
 	return r
 }
