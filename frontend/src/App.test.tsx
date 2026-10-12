@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import {
   QueryClient,
@@ -27,7 +28,27 @@ const renderWithClient = (ui: React.ReactElement) => {
 };
 
 describe('App component', () => {
-  it('renders loading skeletons', () => {
+  it('renders the coastal map view by default', () => {
+    vi.spyOn(useSpotsModule, 'useSpots').mockReturnValue({
+      data: [],
+      isLoading: false,
+      isError: false,
+      error: null,
+      isSuccess: true,
+      status: 'success',
+      fetchStatus: 'idle',
+    } as unknown as UseQueryResult<Spot[], Error>);
+
+    renderWithClient(<App />);
+    expect(screen.getByText('SwellWatch')).toBeInTheDocument();
+    expect(
+      screen.getByLabelText(/carte des côtes françaises/i)
+    ).toBeInTheDocument();
+  });
+
+  it('renders loading skeletons when switching to list view during loading', async () => {
+    const user = userEvent.setup();
+
     vi.spyOn(useSpotsModule, 'useSpots').mockReturnValue({
       data: undefined,
       isLoading: true,
@@ -40,12 +61,18 @@ describe('App component', () => {
 
     const { container } = renderWithClient(<App />);
     expect(screen.getByText('SwellWatch')).toBeInTheDocument();
+
+    const listBtn = screen.getByRole('button', { name: /liste/i });
+    await user.click(listBtn);
+
     expect(container.querySelectorAll('.animate-pulse').length).toBeGreaterThan(
       0
     );
   });
 
-  it('renders spots list with forecast metrics', () => {
+  it('renders spots list with forecast metrics in list view', async () => {
+    const user = userEvent.setup();
+
     vi.spyOn(useSpotsModule, 'useSpots').mockReturnValue({
       data: [
         {
@@ -77,6 +104,10 @@ describe('App component', () => {
 
     renderWithClient(<App />);
     expect(screen.getByText('SwellWatch')).toBeInTheDocument();
+
+    const listBtn = screen.getByRole('button', { name: /liste/i });
+    await user.click(listBtn);
+
     expect(screen.getByText('Hossegor')).toBeInTheDocument();
     expect(screen.getByText('1.9m')).toBeInTheDocument();
     expect(screen.getByText('12s')).toBeInTheDocument();

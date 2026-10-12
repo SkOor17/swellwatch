@@ -94,48 +94,57 @@ User Stories status is tracked via checkboxes:
 - Go client with bounded timeout and retries.
 - Thread-safe `lastCheck` mutex or cache TTL.
 
-### `[ ]` US5: Coastal Canvas 2D Map Rendering Engine
+### `[x]` US5: Coastal Canvas 2D Map Rendering Engine & Pan/Zoom Navigation
 
 - **As a** surfer,
-- **I want** to see a clean, performant map of the French coastline,
-- **So that** I have a geographical overview of surf conditions.
+- **I want** to see a clean, performant map of the French coastline with intuitive pan and zoom capabilities,
+- **So that** I have a geographical overview of surf conditions and can navigate seamlessly across coastal regions.
 
-**Goal**: Implement the high-performance Canvas 2D map engine.
+**Goal**: Implement the high-performance Canvas 2D map engine with responsive pan and zoom navigation.
 
 **Expected Results**:
 
-- Cartographic asset: simplified GeoJSON coastline of France (< 150 KB).
-- Local projection (Mercator / equirectangular) scaled to metropolitan France.
+- Cartographic asset: simplified GeoJSON coastline of France (< 150 KB, ~35 KB bundled).
+- Local projection (Mercator / equirectangular) scaled to metropolitan France with aspect-ratio preservation.
 - Canvas 2D rendering at 60 FPS with Retina `devicePixelRatio` support.
-- Dark ocean theme (`#0B132B`), landmass (`#1C2541`), cyan/white coastal contour.
+- Dark ocean theme (`#0B132B`), landmass (`#1C2541`), cyan/white coastal contour (`#38BDF8`).
+- **Interactive Pan & Zoom Navigation**:
+  - Mouse drag / touch drag to pan across the map.
+  - Mouse wheel / pinch-to-zoom gestures centered on cursor position.
+  - Bounded viewport navigation (min zoom $1.0\times$, max zoom $8.0\times$ or $10.0\times$, bounded pan preventing navigation away from French coasts).
+  - Floating UI control buttons (+ / - / recenter on metropolitan France).
+- Dashboard Integration: View mode switch ("Carte" vs "Liste") taking maximum available space.
 
 **Technical Details**:
 
 - **Architecture**: Module `frontend/src/features/map/` (Feature-Driven structure).
-  - `types.ts`: Projection boundaries, coordinate mapping types, canvas dimensions.
-  - `constants.ts`: Geographic bounding box for metropolitan France (Lon: `[-5.5°, +9.8°]`, Lat: `[41.2°, 51.2°]`), colors (ocean `#0B132B`, landmass `#1C2541`, coast `#38BDF8`).
-  - `data/franceCoastline.ts`: Bundled vector dataset (< 100 KB) for instant zero-latency rendering.
-  - `utils/projection.ts`: Local Mercator projection with $\cos(\text{lat}_{\text{mean}})$ scaling, letterboxing/padding preserving geographic aspect ratio.
-  - `components/CoastalMap.tsx`: Canvas 2D engine with `devicePixelRatio` scaling, pre-compiled `Path2D` to avoid per-frame projection recomputation, `ResizeObserver`, and `requestAnimationFrame` loop.
-- **Dashboard Integration**: View mode switch ("Carte" vs "Liste") in `src/pages/Dashboard.tsx`.
-- **TDD Test Suite**: Projection unit tests (`projection.test.ts`) covering bounding box, center, and aspect ratio; component tests (`CoastalMap.test.tsx`) covering canvas context initialization and resizing.
+  - `types.ts`: Projection boundaries, viewport transform types (`scale`, `panX`, `panY`), coordinate mapping types.
+  - `constants.ts`: Geographic bounding box for metropolitan France, theme colors, zoom constraints (`MIN_ZOOM = 1`, `MAX_ZOOM = 8`).
+  - `data/franceCoastline.ts`: Bundled vector dataset (< 40 KB) for instant zero-latency rendering.
+  - `utils/projection.ts`: Local Mercator projection with $\cos(\text{lat}_{\text{mean}})$ scaling, letterboxing/padding, viewport transformation utilities (`screenToWorld`, `worldToScreen`).
+  - `components/CoastalMap.tsx`: Canvas 2D engine with `devicePixelRatio` scaling, pre-compiled `Path2D`, `ResizeObserver`, pointer event listeners for pan & wheel zoom, floating control buttons (`+`, `-`, `Recentrer`), and `requestAnimationFrame` loop.
+- **TDD Test Suite**: Projection and viewport unit tests (`projection.test.ts`), component interaction tests (`CoastalMap.test.tsx`).
 
-### `[ ]` US6: Interactive Spot Markers & Forecast Drawer
+### `[ ]` US6: Clustered Spot Markers & Forecast Drawer
 
 - **As a** surfer,
-- **I want** to see pulsing spot markers on the map colored by condition quality and click them to open a side drawer,
-- **So that** I can explore surf conditions interactively without losing map context.
+- **I want** to see spots grouped into summary clusters at low zoom that expand into pulsing spot markers when zooming in, and click any spot to open a side drawer,
+- **So that** I am not overwhelmed by too many markers at national zoom, while accessing detailed spot forecasts at regional and local zoom.
 
-**Goal**: Add interactive spot markers and details drawer to the map.
+**Goal**: Add zoom-dependent dynamic spot clustering, interactive markers, and details drawer to the map.
 
 **Expected Results**:
 
-- Spots projected onto the Canvas with score-colored pulsing markers (Green, Yellow, Red).
-- Hit-testing collision detection ($r = 12\text{px}$) for hover and click events.
+- **Dynamic Spot Clustering**:
+  - Low zoom level ($Z < Z_{\text{threshold}}$): Nearby spots are aggregated into visual clusters displaying spot count (e.g. `8`) and an average condition score color badge.
+  - Regional / High zoom level ($Z \ge Z_{\text{threshold}}$): Clusters smoothly dissolve into individual spot markers with spot names and pulsing score badges.
+- Pulsing markers colored by condition score (Green $\ge 7.5$, Yellow $5.0-7.4$, Red $< 5.0$).
+- Hit-testing collision detection ($r = 12\text{px}$) for hover cursor and click events.
 - Sliding side drawer (Shadcn Sheet) showing spot forecasts on click.
 
 **Technical Details**:
 
+- Cluster calculation utility (`utils/clustering.ts`) aggregating spots based on screen-space proximity at current zoom level.
 - Integrate with existing `useSpots` hook.
 - Reuse hourly forecasts and score badges in the side drawer.
 
