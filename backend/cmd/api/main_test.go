@@ -34,7 +34,7 @@ func (m *mockOpenMeteoClient) FetchSpotForecast(ctx context.Context, spotID stri
 }
 
 func setupTestRouter() http.Handler {
-	spotSvc := service.NewSpotService()
+	spotSvc := service.NewDefaultSpotService()
 	memCache := cache.NewMemoryCache[domain.SpotForecast]()
 	forecastSvc := service.NewForecastService(&mockOpenMeteoClient{}, memCache, time.Hour)
 	return apihttp.SetupRouterWithServices(spotSvc, forecastSvc)

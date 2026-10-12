@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- feat(api): Add dynamic French coastal surf spot ingestion from OpenStreetMap Overpass API with in-memory repository, lazy-loading 24h background refresh, and static fallback resilience (US4).
 - feat(scoring): Implement basic mode surf score calculation (0 to 10) based on swell energy and wind penalty (US3).
 - feat(scoring): Implement dynamic skill level matrix evaluating conditions and seabed type (US3).
 - feat(ui): Display condition score badge and recommended skill level badge on spot cards and hourly forecasts (US3).

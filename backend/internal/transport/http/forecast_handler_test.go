@@ -28,7 +28,7 @@ func (m *mockClient) FetchSpotForecast(ctx context.Context, spotID string, lat, 
 }
 
 func TestGetSpotForecastHandler(t *testing.T) {
-	spotSvc := service.NewSpotService()
+	spotSvc := service.NewDefaultSpotService()
 
 	t.Run("returns_404_when_spot_not_found", func(t *testing.T) {
 		memCache := cache.NewMemoryCache[domain.SpotForecast]()
@@ -117,7 +117,7 @@ func TestGetSpotForecastHandler(t *testing.T) {
 }
 
 func TestGetSpotsHandler_WithForecasts(t *testing.T) {
-	spotSvc := service.NewSpotService()
+	spotSvc := service.NewDefaultSpotService()
 	memCache := cache.NewMemoryCache[domain.SpotForecast]()
 	client := &mockClient{
 		fetchFunc: func(ctx context.Context, spotID string, lat, lon float64) (*domain.SpotForecast, error) {

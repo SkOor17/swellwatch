@@ -9,7 +9,7 @@ import (
 
 func GetSpotsHandler(spotSvc *service.SpotService, forecastSvc *service.ForecastService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		spots := spotSvc.GetAllSpots()
+		spots := spotSvc.GetAllSpots(r.Context())
 		if forecastSvc != nil {
 			spots = forecastSvc.EnrichSpotsWithForecasts(r.Context(), spots)
 		}

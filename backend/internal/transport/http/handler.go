@@ -10,11 +10,15 @@ import (
 	"github.com/swellwatch/backend/internal/cache"
 	"github.com/swellwatch/backend/internal/domain"
 	"github.com/swellwatch/backend/internal/openmeteo"
+	"github.com/swellwatch/backend/internal/osm"
+	"github.com/swellwatch/backend/internal/repository"
 	"github.com/swellwatch/backend/internal/service"
 )
 
 func SetupRouter() http.Handler {
-	spotSvc := service.NewSpotService()
+	repo := repository.NewMemorySpotRepository()
+	osmClient := osm.NewClient()
+	spotSvc := service.NewSpotService(repo, osmClient, 24*time.Hour)
 	openMeteoClient := openmeteo.NewClient()
 	memCache := cache.NewMemoryCache[domain.SpotForecast]()
 	forecastSvc := service.NewForecastService(openMeteoClient, memCache, 1*time.Hour)
