@@ -22,7 +22,18 @@ y = (lat_max - lat) * (height / (lat_max - lat_min));
 - Pre-compiled into a `Path2D` Canvas object on load to minimize GPU overhead per frame.
 - Visuals: Dark seabed background (`#0B132B`), sleek landmass (`#1C2541`), with a soft cyan/white coastal outline.
 
-## 3. Swell Train Kinematics and Animation
+## 3. Viewport Transform & Pan/Zoom Navigation
+
+The canvas supports multi-resolution pan and zoom to navigate along the coast:
+
+- **Zoom bounds**: $Z \in [1.0, 8.0]$ ($1.0$ fits full metropolitan France, $8.0$ allows local bay/beach zoom).
+- **Coordinate transformation**:
+  $$\begin{pmatrix} x_{screen} \\ y_{screen} \end{pmatrix} = \begin{pmatrix} (x_{base} - x_{center}) \cdot Z + x_{center} + \text{pan}_x \\ (y_{base} - y_{center}) \cdot Z + y_{center} + \text{pan}_y \end{pmatrix}$$
+- **Zoom towards pointer**: When scrolling wheel or pinching, the geographic coordinate under the pointer remains fixed on screen.
+- **Pan constraints**: Panning is softly bounded to prevent users from drifting into infinite open ocean.
+- **Controls**: Interactive drag, wheel scroll, double-click to zoom in, and floating UI buttons (+ / - / recenter).
+
+## 4. Swell Train Kinematics and Animation
 
 Waves are modeled as wavefronts propagating towards the coast according to the average swell vector ($\theta, H_s, T_p$).
 
@@ -37,10 +48,12 @@ Waves are modeled as wavefronts propagating towards the coast according to the a
 
 As wavefronts approach the shore ($d < d_{threshold}$), opacity undergoes a cosine attenuation to simulate breaking, preventing the lines from crossing onto the landmass.
 
-## 4. Spot Interaction
+## 5. Spot Interaction & Dynamic Clustering
 
-- Surfing spots are mapped onto the Canvas.
-- Displayed as pulsing points colored by condition score:
+- **Level of Detail (LOD) / Dynamic Clustering**:
+  - **National Overview ($Z < Z_{threshold}$)**: Nearby spots are clustered together with an aggregated badge showing the spot count and average condition score color.
+  - **Regional/Local View ($Z \ge Z_{threshold}$)**: Clusters expand into individual pulsing spot markers.
+- **Spot Markers**:
   - **Green** (Score $\ge 7.5$): Excellent conditions.
   - **Yellow/Orange** ($5.0 \le \text{Score} < 7.5$): Average conditions.
   - **Red/Grey** ($\text{Score} < 5.0$): Poor or blown-out conditions.
