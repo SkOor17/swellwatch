@@ -17,7 +17,7 @@ func GetSpotForecastHandler(spotSvc *service.SpotService, forecastSvc *service.F
 			return
 		}
 
-		spot, found := spotSvc.GetSpotByID(spotID)
+		spot, found := spotSvc.GetSpotByID(r.Context(), spotID)
 		if !found {
 			writeJSONError(w, http.StatusNotFound, "spot not found")
 			return

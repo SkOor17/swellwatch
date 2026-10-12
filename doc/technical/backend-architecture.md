@@ -16,9 +16,14 @@ backend-go/
 │   ├── service/                 # Business logic and orchestration
 │   │   ├── forecast_service.go  # Score calculation and forecast assembly
 │   │   └── spot_service.go      # Spot catalog management
-│   ├── repository/              # Data persistence access (PostgreSQL)
+│   ├── repository/              # Data persistence layer
+│   │   ├── spot_repository.go
+│   │   ├── memory_spot_repo.go
 │   │   ├── postgres_spot_repo.go
 │   │   └── schema.sql
+│   ├── osm/                     # External client for OpenStreetMap Overpass API
+│   │   ├── client.go
+│   │   └── models.go
 │   ├── openmeteo/               # External HTTP client for Open-Meteo Marine API
 │   │   ├── client.go
 │   │   └── models.go

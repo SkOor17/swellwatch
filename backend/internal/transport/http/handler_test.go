@@ -27,7 +27,7 @@ func (m *routerMockClient) FetchSpotForecast(ctx context.Context, spotID string,
 }
 
 func TestRouter_AllRoutes(t *testing.T) {
-	spotSvc := service.NewSpotService()
+	spotSvc := service.NewDefaultSpotService()
 	memCache := cache.NewMemoryCache[domain.SpotForecast]()
 	forecastSvc := service.NewForecastService(&routerMockClient{}, memCache, time.Hour)
 	router := SetupRouterWithServices(spotSvc, forecastSvc)

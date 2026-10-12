@@ -75,9 +75,83 @@ User Stories status is tracked via checkboxes:
 
 **Epic Goal**: Replace the simple list with an interactive map of France and automatically import spots via OpenStreetMap.
 
-- `[ ]` **US4: Dynamic spot import via OSM** (Lazy Loading Overpass API).
-- `[ ]` **US5: Display the interactive coastal map**.
-- `[ ]` **US6: Animate swell trains on the map**.
+### `[x]` US4: Dynamic Spot Ingestion via OpenStreetMap
+
+- **As a** surfer,
+- **I want** the platform to automatically discover and list surf spots along the French coast,
+- **So that** I have an exhaustive spot catalog without manual database entry.
+
+**Goal**: Ingest spots dynamically from OSM Overpass API.
+
+**Expected Results**:
+
+- Backend client queries Overpass API for French coastal spots (`sport=surfing`, `natural=beach/reef`).
+- Lazy-loading mechanism with thread-safe cache / 24h refresh.
+- Error resilience and fallback to cached or static spots.
+
+**Technical Details**:
+
+- Go client with bounded timeout and retries.
+- Thread-safe `lastCheck` mutex or cache TTL.
+
+### `[ ]` US5: Coastal Canvas 2D Map Rendering Engine
+
+- **As a** surfer,
+- **I want** to see a clean, performant map of the French coastline,
+- **So that** I have a geographical overview of surf conditions.
+
+**Goal**: Implement the high-performance Canvas 2D map engine.
+
+**Expected Results**:
+
+- Cartographic asset: simplified GeoJSON coastline of France (< 150 KB).
+- Local projection (Mercator / equirectangular) scaled to metropolitan France.
+- Canvas 2D rendering at 60 FPS with Retina `devicePixelRatio` support.
+- Dark ocean theme (`#0B132B`), landmass (`#1C2541`), cyan/white coastal contour.
+
+**Technical Details**:
+
+- **Architecture**: Module `frontend/src/features/map/` (Feature-Driven structure).
+  - `types.ts`: Projection boundaries, coordinate mapping types, canvas dimensions.
+  - `constants.ts`: Geographic bounding box for metropolitan France (Lon: `[-5.5°, +9.8°]`, Lat: `[41.2°, 51.2°]`), colors (ocean `#0B132B`, landmass `#1C2541`, coast `#38BDF8`).
+  - `data/franceCoastline.ts`: Bundled vector dataset (< 100 KB) for instant zero-latency rendering.
+  - `utils/projection.ts`: Local Mercator projection with $\cos(\text{lat}_{\text{mean}})$ scaling, letterboxing/padding preserving geographic aspect ratio.
+  - `components/CoastalMap.tsx`: Canvas 2D engine with `devicePixelRatio` scaling, pre-compiled `Path2D` to avoid per-frame projection recomputation, `ResizeObserver`, and `requestAnimationFrame` loop.
+- **Dashboard Integration**: View mode switch ("Carte" vs "Liste") in `src/pages/Dashboard.tsx`.
+- **TDD Test Suite**: Projection unit tests (`projection.test.ts`) covering bounding box, center, and aspect ratio; component tests (`CoastalMap.test.tsx`) covering canvas context initialization and resizing.
+
+### `[ ]` US6: Interactive Spot Markers & Forecast Drawer
+
+- **As a** surfer,
+- **I want** to see pulsing spot markers on the map colored by condition quality and click them to open a side drawer,
+- **So that** I can explore surf conditions interactively without losing map context.
+
+**Goal**: Add interactive spot markers and details drawer to the map.
+
+**Expected Results**:
+
+- Spots projected onto the Canvas with score-colored pulsing markers (Green, Yellow, Red).
+- Hit-testing collision detection ($r = 12\text{px}$) for hover and click events.
+- Sliding side drawer (Shadcn Sheet) showing spot forecasts on click.
+
+**Technical Details**:
+
+- Integrate with existing `useSpots` hook.
+- Reuse hourly forecasts and score badges in the side drawer.
+
+### `[ ]` US7: Animated Swell Trains on the Map
+
+- **As a** surfer,
+- **I want** to see animated wavefronts propagating towards the coast,
+- **So that** I can visualize swell direction, energy, and period dynamically.
+
+**Goal**: Simulate swell trains on Canvas using maritime wave vectors.
+
+**Expected Results**:
+
+- Backend endpoint `GET /api/v1/coastline/wave-vectors` providing regional offshore swell vectors (Atlantic, Channel, Bay of Biscay, Med).
+- Canvas kinematic wave propagation engine ($\theta, H_s, T_p$) with coastal cosine fade-out.
+- 60 FPS fluid rendering loop.
 
 ---
 
