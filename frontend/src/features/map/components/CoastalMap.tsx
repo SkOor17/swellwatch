@@ -1,16 +1,31 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Minus, Plus, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import type { Spot } from '../../spots/types';
 import {
   DEFAULT_MAP_PADDING,
   DEFAULT_VIEWPORT,
+  LABEL_MIN_ZOOM,
   MAP_COLORS,
   MAX_ZOOM,
   MIN_ZOOM,
   ZOOM_STEP,
 } from '../constants';
 import { FRANCE_COASTLINE } from '../data/franceCoastline';
-import type { MapColors, ProjectionResult, ViewportTransform } from '../types';
+import type {
+  HitTarget,
+  MapCluster,
+  MapColors,
+  MapSpotMarker,
+  ProjectionResult,
+  ScreenPoint,
+  ViewportTransform,
+} from '../types';
+import {
+  clusterSpots,
+  findHitTarget,
+  getScoreColor,
+} from '../utils/clustering';
 import {
   clampViewport,
   createCoastlinePath2D,
@@ -22,12 +37,144 @@ export interface CoastalMapProps {
   className?: string;
   padding?: number;
   colors?: Partial<MapColors>;
+  spots?: Spot[];
+  onSelectSpot?: (spot: Spot) => void;
+}
+
+/**
+ * Extracts pointer coordinates relative to the canvas bounding box.
+ */
+function getCanvasPointer(
+  canvas: HTMLCanvasElement,
+  clientX: number,
+  clientY: number
+): ScreenPoint {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: clientX - rect.left,
+    y: clientY - rect.top,
+  };
+}
+
+/**
+ * Draws spot summary clusters on the 2D canvas.
+ */
+function renderClusters(ctx: CanvasRenderingContext2D, clusters: MapCluster[]) {
+  clusters.forEach((cluster) => {
+    const color = getScoreColor(cluster.averageScore);
+    const radius = Math.min(15 + Math.floor(cluster.count / 2), 22);
+
+    ctx.beginPath();
+    ctx.arc(cluster.screenX, cluster.screenY, radius, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+    ctx.fill();
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = color;
+    ctx.stroke();
+
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 11px system-ui, -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`${cluster.count}`, cluster.screenX, cluster.screenY);
+  });
+}
+
+/**
+ * Draws text label for an individual spot.
+ */
+function renderMarkerLabel(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number
+) {
+  ctx.font = '600 11px system-ui, -apple-system, sans-serif';
+  const textWidth = ctx.measureText ? ctx.measureText(text).width : 40;
+  const labelX = x + 11;
+  const labelY = y - 10;
+  const paddingX = 6;
+  const labelHeight = 18;
+
+  ctx.save();
+  ctx.fillStyle = 'rgba(11, 19, 43, 0.9)';
+  ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+  ctx.lineWidth = 1;
+  if (ctx.roundRect) {
+    ctx.beginPath();
+    ctx.roundRect(labelX, labelY, textWidth + paddingX * 2, labelHeight, 4);
+    ctx.fill();
+    ctx.stroke();
+  } else {
+    ctx.fillRect(labelX, labelY, textWidth + paddingX * 2, labelHeight);
+    ctx.strokeRect(labelX, labelY, textWidth + paddingX * 2, labelHeight);
+  }
+
+  ctx.fillStyle = '#F8FAFC';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, labelX + paddingX, labelY + labelHeight / 2);
+  ctx.restore();
+}
+
+/**
+ * Draws individual spot markers with pulsing animation and score colors.
+ */
+function renderSpotMarkers(
+  ctx: CanvasRenderingContext2D,
+  markers: MapSpotMarker[],
+  hoveredTarget: HitTarget | null,
+  zoom: number,
+  now: number
+) {
+  const pulseProgress = (now % 1500) / 1500;
+  const pulseRadius = 7 + pulseProgress * 9;
+  const pulseAlpha = (1 - pulseProgress) * 0.45;
+
+  markers.forEach((marker) => {
+    const score = marker.spot.current_forecast?.score;
+    const color = getScoreColor(score);
+    const isHovered =
+      hoveredTarget?.type === 'spot' &&
+      hoveredTarget.spot.id === marker.spot.id;
+
+    // Pulsing halo
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(marker.screenX, marker.screenY, pulseRadius, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.globalAlpha = pulseAlpha;
+    ctx.fill();
+    ctx.restore();
+
+    // Center disc
+    ctx.beginPath();
+    ctx.arc(
+      marker.screenX,
+      marker.screenY,
+      isHovered ? 8.5 : 7,
+      0,
+      Math.PI * 2
+    );
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.stroke();
+
+    // Label on hover or high zoom
+    if (isHovered || zoom >= LABEL_MIN_ZOOM) {
+      renderMarkerLabel(ctx, marker.spot.name, marker.screenX, marker.screenY);
+    }
+  });
 }
 
 export function CoastalMap({
   className = '',
   padding = DEFAULT_MAP_PADDING,
   colors,
+  spots = [],
+  onSelectSpot,
 }: CoastalMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -43,7 +190,22 @@ export function CoastalMap({
     height: 600,
   });
 
+  const spotsRef = useRef<Spot[]>(spots);
+  useEffect(() => {
+    spotsRef.current = spots;
+  }, [spots]);
+
+  const onSelectSpotRef = useRef(onSelectSpot);
+  useEffect(() => {
+    onSelectSpotRef.current = onSelectSpot;
+  }, [onSelectSpot]);
+
+  const currentClustersRef = useRef<MapCluster[]>([]);
+  const currentMarkersRef = useRef<MapSpotMarker[]>([]);
+  const hoveredTargetRef = useRef<HitTarget | null>(null);
+
   const isDraggingRef = useRef<boolean>(false);
+  const dragDistanceRef = useRef<number>(0);
   const dragStartRef = useRef<{
     x: number;
     y: number;
@@ -136,7 +298,6 @@ export function CoastalMap({
         projection.project
       );
 
-      // Re-clamp viewport against new canvas dimensions
       const clamped = clampViewport(viewportRef.current, width, height);
       viewportRef.current = clamped;
       setViewport(clamped);
@@ -152,24 +313,22 @@ export function CoastalMap({
       ctx.save();
       ctx.scale(dpr, dpr);
 
-      // Ocean seabed background
+      // 1. Ocean seabed background
       ctx.fillStyle = resolvedColors.ocean;
       ctx.fillRect(0, 0, width, height);
 
-      // Apply viewport pan and zoom matrix
+      // 2. Vector landmass & coastline
       ctx.save();
       ctx.translate(width / 2 + vp.panX, height / 2 + vp.panY);
       ctx.scale(vp.zoom, vp.zoom);
       ctx.translate(-width / 2, -height / 2);
 
-      // Vector landmass & coastline
       const path = path2dRef.current;
       if (path) {
         ctx.fillStyle = resolvedColors.landmass;
         ctx.fill(path);
 
         ctx.strokeStyle = resolvedColors.coastline;
-        // Keep coastal stroke width visually crisp at all zoom levels
         ctx.lineWidth = 1.5 / vp.zoom;
         ctx.lineJoin = 'round';
         ctx.lineCap = 'round';
@@ -177,6 +336,32 @@ export function CoastalMap({
       }
 
       ctx.restore();
+
+      // 3. Dynamic Clusters & Markers in screen coordinates
+      if (projectionRef.current && spotsRef.current.length > 0) {
+        const clustering = clusterSpots(
+          spotsRef.current,
+          projectionRef.current,
+          vp,
+          width,
+          height
+        );
+        currentClustersRef.current = clustering.clusters;
+        currentMarkersRef.current = clustering.markers;
+      } else {
+        currentClustersRef.current = [];
+        currentMarkersRef.current = [];
+      }
+
+      renderClusters(ctx, currentClustersRef.current);
+      renderSpotMarkers(
+        ctx,
+        currentMarkersRef.current,
+        hoveredTargetRef.current,
+        vp.zoom,
+        performance.now()
+      );
+
       ctx.restore();
 
       rafIdRef.current = requestAnimationFrame(render);
@@ -204,15 +389,9 @@ export function CoastalMap({
 
     resizeObserver.observe(container);
 
-    // Non-passive wheel event listener to enable e.preventDefault()
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
-      const rect = canvas.getBoundingClientRect();
-      const pointer = {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
-      };
-
+      const pointer = getCanvasPointer(canvas, e.clientX, e.clientY);
       const zoomMultiplier = e.deltaY < 0 ? 1.15 : 1 / 1.15;
       const next = zoomAtPoint(
         viewportRef.current,
@@ -241,7 +420,7 @@ export function CoastalMap({
     resolvedColors.coastline,
   ]);
 
-  // Pointer drag interactions
+  // Pointer drag and click interactions
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) {
@@ -251,6 +430,7 @@ export function CoastalMap({
       canvas.setPointerCapture(e.pointerId);
     }
     isDraggingRef.current = true;
+    dragDistanceRef.current = 0;
     dragStartRef.current = {
       x: e.clientX,
       y: e.clientY,
@@ -260,22 +440,44 @@ export function CoastalMap({
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!isDraggingRef.current) {
+    const canvas = canvasRef.current;
+    if (!canvas) {
       return;
     }
-    const dx = e.clientX - dragStartRef.current.x;
-    const dy = e.clientY - dragStartRef.current.y;
 
-    const next = clampViewport(
-      {
-        ...viewportRef.current,
-        panX: dragStartRef.current.initialPanX + dx,
-        panY: dragStartRef.current.initialPanY + dy,
-      },
-      dimensionsRef.current.width,
-      dimensionsRef.current.height
+    if (isDraggingRef.current) {
+      const dx = e.clientX - dragStartRef.current.x;
+      const dy = e.clientY - dragStartRef.current.y;
+      dragDistanceRef.current = Math.hypot(dx, dy);
+
+      if (dragDistanceRef.current > 3) {
+        const next = clampViewport(
+          {
+            ...viewportRef.current,
+            panX: dragStartRef.current.initialPanX + dx,
+            panY: dragStartRef.current.initialPanY + dy,
+          },
+          dimensionsRef.current.width,
+          dimensionsRef.current.height
+        );
+        updateViewport(next);
+      }
+      return;
+    }
+
+    const pointer = getCanvasPointer(canvas, e.clientX, e.clientY);
+    const hit = findHitTarget(
+      pointer,
+      currentClustersRef.current,
+      currentMarkersRef.current
     );
-    updateViewport(next);
+    hoveredTargetRef.current = hit;
+
+    if (hit) {
+      canvas.style.cursor = 'pointer';
+    } else {
+      canvas.style.cursor = viewportRef.current.zoom > 1.0 ? 'grab' : 'default';
+    }
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -286,7 +488,33 @@ export function CoastalMap({
     if (canvas.releasePointerCapture) {
       canvas.releasePointerCapture(e.pointerId);
     }
+
+    if (dragDistanceRef.current <= 5) {
+      const pointer = getCanvasPointer(canvas, e.clientX, e.clientY);
+      const hit = findHitTarget(
+        pointer,
+        currentClustersRef.current,
+        currentMarkersRef.current
+      );
+
+      if (hit) {
+        if (hit.type === 'cluster') {
+          const next = zoomAtPoint(
+            viewportRef.current,
+            1.5,
+            { x: hit.cluster.screenX, y: hit.cluster.screenY },
+            dimensionsRef.current.width,
+            dimensionsRef.current.height
+          );
+          updateViewport(next);
+        } else if (hit.type === 'spot') {
+          onSelectSpotRef.current?.(hit.spot);
+        }
+      }
+    }
+
     isDraggingRef.current = false;
+    dragDistanceRef.current = 0;
   };
 
   const handleDoubleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -294,11 +522,7 @@ export function CoastalMap({
     if (!canvas) {
       return;
     }
-    const rect = canvas.getBoundingClientRect();
-    const pointer = {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    };
+    const pointer = getCanvasPointer(canvas, e.clientX, e.clientY);
     const next = zoomAtPoint(
       viewportRef.current,
       1.5,

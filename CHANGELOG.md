@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- feat(map): Add dynamic spot clustering, 60 FPS Canvas 2D pulsing markers colored by surf score, interactive hit testing, cluster zoom navigation, and sliding forecast drawer (US6).
 - feat(map): Implement coastal Canvas 2D map rendering engine with Retina DPR support, local Mercator projection preserving aspect ratio, sub-40KB bundled France vector dataset, 60 FPS animation loop, interactive pan & zoom navigation with wheel/drag gestures and floating controls, and Dashboard view switcher (US5).
 
 - feat(api): Add dynamic French coastal surf spot ingestion from OpenStreetMap Overpass API with in-memory repository, lazy-loading 24h background refresh, and static fallback resilience (US4).

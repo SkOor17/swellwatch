@@ -41,3 +41,30 @@ export const DEFAULT_VIEWPORT: ViewportTransform = {
   panX: 0,
   panY: 0,
 };
+
+/**
+ * Screen space cluster proximity radius in CSS pixels.
+ */
+export const CLUSTER_RADIUS_PX = 50;
+
+/**
+ * Visual radii for markers and clusters.
+ */
+export const SPOT_MARKER_RADIUS = 7;
+export const SPOT_HIT_RADIUS = 14;
+export const CLUSTER_HIT_RADIUS = 18;
+
+/**
+ * Minimum zoom level at which spot labels are automatically rendered.
+ */
+export const LABEL_MIN_ZOOM = 3.0;
+
+/**
+ * Score color mapping for markers and clusters.
+ */
+export const SCORE_COLORS = {
+  excellent: '#10B981', // >= 7.5
+  medium: '#F59E0B', // 5.0 - 7.4
+  poor: '#EF4444', // < 5.0
+  unrated: '#94A3B8', // undefined / N/A
+} as const;

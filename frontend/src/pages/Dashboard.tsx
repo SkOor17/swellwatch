@@ -2,12 +2,17 @@ import { useState } from 'react';
 import { List, Map as MapIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CoastalMap } from '../features/map/components/CoastalMap';
+import { useSpots } from '../features/spots/api/useSpots';
+import { SpotForecastDrawer } from '../features/spots/components/SpotForecastDrawer';
 import { SpotList } from '../features/spots/components/SpotList';
+import type { Spot } from '../features/spots/types';
 
 type ViewMode = 'map' | 'list';
 
 export function Dashboard() {
   const [viewMode, setViewMode] = useState<ViewMode>('map');
+  const [selectedSpot, setSelectedSpot] = useState<Spot | null>(null);
+  const { data: spots } = useSpots();
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-950 text-slate-100 p-4 md:p-6">
@@ -57,7 +62,11 @@ export function Dashboard() {
       <main className="flex-1 flex flex-col w-full">
         {viewMode === 'map' ? (
           <div className="flex-1 w-full min-h-[500px] h-[calc(100vh-140px)] rounded-xl border border-slate-800 bg-[#0B132B] overflow-hidden shadow-2xl">
-            <CoastalMap className="w-full h-full" />
+            <CoastalMap
+              className="w-full h-full"
+              spots={spots}
+              onSelectSpot={(spot) => setSelectedSpot(spot)}
+            />
           </div>
         ) : (
           <div className="w-full">
@@ -68,6 +77,12 @@ export function Dashboard() {
           </div>
         )}
       </main>
+
+      <SpotForecastDrawer
+        spot={selectedSpot}
+        open={Boolean(selectedSpot)}
+        onClose={() => setSelectedSpot(null)}
+      />
     </div>
   );
 }

@@ -55,10 +55,16 @@ HTMLCanvasElement.prototype.getContext = vi.fn().mockImplementation(function (
         moveTo: vi.fn(),
         lineTo: vi.fn(),
         arc: vi.fn(),
+        fillText: vi.fn(),
+        strokeText: vi.fn(),
+        measureText: vi.fn().mockReturnValue({ width: 20 }),
         canvas: this,
         fillStyle: '',
         strokeStyle: '',
         lineWidth: 1,
+        font: '',
+        textAlign: 'center',
+        textBaseline: 'middle',
       });
     }
     return contextCache.get(this);
