@@ -50,12 +50,19 @@ As wavefronts approach the shore ($d < d_{threshold}$), opacity undergoes a cosi
 
 ## 5. Spot Interaction & Dynamic Clustering
 
-- **Level of Detail (LOD) / Dynamic Clustering**:
-  - **National Overview ($Z < Z_{threshold}$)**: Nearby spots are clustered together with an aggregated badge showing the spot count and average condition score color.
-  - **Regional/Local View ($Z \ge Z_{threshold}$)**: Clusters expand into individual pulsing spot markers.
+- **Dynamic Screen-Space Clustering (`utils/clustering.ts`)**:
+  - Distance threshold: $R_{\text{cluster}} = 50\text{px}$ in screen viewport space.
+  - Nearby spots are aggregated into clusters displaying spot count and average condition score color badge.
+  - As the user zooms in, pixel distance increases naturally and clusters smoothly dissolve into individual markers without arbitrary zoom thresholds.
+  - Clicking a cluster triggers an auto-zoom ($+1.5\times$ zoom centered on cluster centroid).
 - **Spot Markers**:
-  - **Green** (Score $\ge 7.5$): Excellent conditions.
-  - **Yellow/Orange** ($5.0 \le \text{Score} < 7.5$): Average conditions.
-  - **Red/Grey** ($\text{Score} < 5.0$): Poor or blown-out conditions.
-- Collision detection with a radius ($r = 12\text{px}$) handles hover and click events.
-- Clicking triggers a Shadcn UI Sheet/Drawer to show the full forecast without leaving the map context.
+  - **Color code**: Green ($\ge 7.5$), Amber ($5.0 - 7.4$), Red ($< 5.0$), Slate (unrated).
+  - **Pulsing Animation**: Outer expanding ring rendered in Canvas 2D via `requestAnimationFrame` loop with smooth alpha fade-out.
+  - **Spot Labels**: Displayed on hover or automatically at high zoom ($Z \ge 3.0$) with high-contrast pill backdrop.
+- **Hit Testing & Collision Detection**:
+  - Distance-based hit testing ($r \approx 14\text{px}$ for single spots, $r \approx 18\text{px}$ for clusters).
+  - Distinguishes click from pan drag (travel distance $\le 5\text{px}$).
+  - Updates cursor to `pointer` on hover.
+- **Forecast Side Drawer (`SpotForecastDrawer.tsx`)**:
+  - Sliding drawer (`components/ui/sheet.tsx`) opening from the right without leaving map context.
+  - Displays spot live score badge, skill level badge, wave/swell metrics, wind and gusts with cardinal direction indicators, and 24h hourly forecast breakdown table.

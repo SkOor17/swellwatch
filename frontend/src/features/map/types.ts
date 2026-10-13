@@ -1,3 +1,5 @@
+import type { Spot } from '../spots/types';
+
 export type GeoPoint = [longitude: number, latitude: number];
 
 export interface ScreenPoint {
@@ -55,3 +57,28 @@ export interface ViewportTransform {
   panX: number;
   panY: number;
 }
+
+export interface MapCluster {
+  id: string;
+  screenX: number;
+  screenY: number;
+  count: number;
+  spots: Spot[];
+  averageScore?: number;
+}
+
+export interface MapSpotMarker {
+  id: string;
+  spot: Spot;
+  screenX: number;
+  screenY: number;
+}
+
+export interface ClusteringResult {
+  clusters: MapCluster[];
+  markers: MapSpotMarker[];
+}
+
+export type HitTarget =
+  | { type: 'cluster'; cluster: MapCluster }
+  | { type: 'spot'; spot: Spot; marker: MapSpotMarker };

@@ -32,6 +32,6 @@ tmp/
 build-errors.log
 
 # Editor/IDE
-# .idea/
-# .vscode/
+.idea/
+.vscode/
 

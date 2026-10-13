@@ -125,7 +125,7 @@ User Stories status is tracked via checkboxes:
   - `components/CoastalMap.tsx`: Canvas 2D engine with `devicePixelRatio` scaling, pre-compiled `Path2D`, `ResizeObserver`, pointer event listeners for pan & wheel zoom, floating control buttons (`+`, `-`, `Recentrer`), and `requestAnimationFrame` loop.
 - **TDD Test Suite**: Projection and viewport unit tests (`projection.test.ts`), component interaction tests (`CoastalMap.test.tsx`).
 
-### `[ ]` US6: Clustered Spot Markers & Forecast Drawer
+### `[x]` US6: Clustered Spot Markers & Forecast Drawer
 
 - **As a** surfer,
 - **I want** to see spots grouped into summary clusters at low zoom that expand into pulsing spot markers when zooming in, and click any spot to open a side drawer,
